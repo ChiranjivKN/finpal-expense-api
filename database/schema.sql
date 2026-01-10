@@ -22,7 +22,6 @@ Create Table Users (
 	
 	Constraint PK_Users_UserID Primary Key (UserID),
 	Constraint UQ_Users_Email Unique (Email)
-
 );
 
 -- =============================================
@@ -36,8 +35,8 @@ Create Table Categories (
 	IsActive Bit Not Null Default 1,
 
 	Constraint PK_Categories_CategoryID Primary Key (CategoryID),
-	Constraint FK_Categories_Users Foreign Key (UserId) References Users(UserID)
-
+	Constraint FK_Categories_Users Foreign Key (UserId) References Users(UserID),
+	Constraint UQ_Categories_UserID_CategoryID Unique (UserID, CategoryID)
 );
 
 -- =============================================
@@ -55,8 +54,9 @@ Create Table Expenses (
 	IsDeleted Bit Not Null Default 0,
 
 	Constraint PK_Expenses_ExpenseID Primary Key (ExpenseID),
-	Constraint FK_Expenses_Users Foreign Key (UserID) References Users(UserID),
-	Constraint FK_Expenses_Categories Foreign Key (CategoryID) References Categories(CategoryID)
+	Constraint FK_Expenses_Users Foreign Key (UserID) References Users (UserID),
+	Constraint FK_Expenses_Categories Foreign Key (CategoryID) References Categories (CategoryID),
+	Constraint FK_Expenses_UserID_CategoryID Foreign Key (UserID, CategoryID) References Categories(UserID, CategoryID)
 );
 
 -- =============================================
@@ -64,7 +64,7 @@ Create Table Expenses (
 -- =============================================
 
 Create Table Budgets (
-	BudgetID Int,
+	BudgetID Int Identity(1,1),
 	UserID Int Not Null,
 	CategoryID Int Not Null,
 	[Month] Int Not Null Check ([Month] Between 1 And 12),
@@ -73,8 +73,9 @@ Create Table Budgets (
 	CreatedAt DateTime Not Null Default GetDate(),
 
 	Constraint PK_Budgets_BudgetID Primary Key (BudgetID),
-	Constraint FK_Budgets_Users Foreign Key (UserID) References Users(UserID),
-	Constraint FK_Budgets_Categories Foreign Key (CategoryID) References Categories(CategoryID),
+	Constraint FK_Budgets_Users Foreign Key (UserID) References Users (UserID),
+	Constraint FK_Budgets_Categories Foreign Key (CategoryID) References Categories (CategoryID),
+	Constraint FK_Budgets_UserID_CategoryID Foreign Key (UserID, CategoryID) References Categories (UserID, CategoryID),
 	Constraint UQ_Budgets_User_Category_Month_Year Unique (UserID, CategoryID, [Month], [Year])
 );
 

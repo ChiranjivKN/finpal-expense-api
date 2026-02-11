@@ -1,0 +1,6 @@
+@Finpal.Expense.Api_HostAddress = http://localhost:5211
+
+GET {{Finpal.Expense.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

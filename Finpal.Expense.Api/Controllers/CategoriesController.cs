@@ -66,17 +66,11 @@ namespace FinPal.Expense.Api.Controllers
 
             return Ok(response);
 
-            /*return CreatedAtAction(
-            nameof(GetById),
-            new { id = category.CategoryId },
-            response);*/      
-            
         }
 
         //GET: api/categories?userId=1
 
         [HttpGet]
-        
         public async Task<IActionResult> GetByUserId(int userId)
         {
             var categories = await _db.Categories
@@ -89,7 +83,35 @@ namespace FinPal.Expense.Api.Controllers
                 .ToListAsync();
 
             return Ok(categories);
-        } 
+        }
+
+        //PUT: api/categories
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, CreateCategoryRequestDto request)
+        {
+            //check if the category exists
+            var category = await _db.Categories.FirstOrDefaultAsync(c => c.CategoryId == id && c.IsActive);
+
+            if (category == null)
+            {
+                return NotFound($"Category with ID {id} does not exist!");
+            }
+
+            //check if name to be updated already exists
+            var duplicateExists = await _db.Categories.AnyAsync(c => c.UserId == request.UserId && c.CategoryName == request.CategoryName && c.CategoryId != id);
+
+            if (duplicateExists)
+            {
+                return BadRequest("Another category with same name exists");
+            }
+
+            category.CategoryName = request.CategoryName;
+
+            await _db.SaveChangesAsync();
+
+            return NoContent();
+        }
 
     }
 }

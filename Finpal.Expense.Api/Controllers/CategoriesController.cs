@@ -113,5 +113,25 @@ namespace FinPal.Expense.Api.Controllers
             return NoContent();
         }
 
+        //DELETE: api/categories
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            //check if the Category exists
+            var category = await _db.Categories.FirstOrDefaultAsync(c => c.CategoryId == id && c.IsActive);
+
+            if(category == null)
+            {
+                return NotFound("Category does not exist");
+            }
+
+            category.IsActive = false;
+
+            await _db.SaveChangesAsync();
+
+            return NoContent();
+        }
+
     }
 }

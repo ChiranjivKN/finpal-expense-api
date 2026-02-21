@@ -19,12 +19,13 @@ namespace FinPal.Expense.Api.Controllers
             _db = db;
         }
 
-        //POST: api/expenses
+        //POST: api/Expenses
         [HttpPost]
         public async Task<IActionResult> Create(CreateExpenseRequestDto request)
         {
             //Check if User exists
-            var userExists = await _db.Users.AnyAsync(u => u.UserID == request.UserId && u.IsActive);
+            var userExists = await _db.Users
+                .AnyAsync(u => u.UserID == request.UserId && u.IsActive);
 
             if (!userExists)
             {
@@ -32,7 +33,8 @@ namespace FinPal.Expense.Api.Controllers
             }
 
             //Check if User-Category composite exists
-            var categoryExists = await _db.Categories.AnyAsync(c => c.CategoryId == request.CategoryId && c.UserId == request.UserId && c.IsActive);
+            var categoryExists = await _db.Categories
+                .AnyAsync(c => c.CategoryId == request.CategoryId && c.UserId == request.UserId && c.IsActive);
 
             if(!categoryExists)
             {
@@ -52,6 +54,54 @@ namespace FinPal.Expense.Api.Controllers
             await _db.SaveChangesAsync();
 
             return Ok();            
+        }
+
+        //GET: api/Expenses
+        [HttpGet]
+        public async Task<IActionResult> GetByUserId(int userId)
+        {
+            var expenses = await _db.Expenses
+                .AsNoTracking()
+                .Where(e => e.UserId == userId && !e.IsDeleted)
+                .Select(e => new ExpenseResponseDto
+                {
+                    ExpenseId = e.ExpenseId,
+                    Amount = e.Amount,
+                    Description = e.Description,
+                    ExpenseDate = e.ExpenseDate,
+                    CategoryName = e.Category.CategoryName
+                })
+                .OrderByDescending(e => e.ExpenseDate)
+                .ToListAsync();
+
+            return Ok(expenses);            
+        }
+
+        //GET: api/Expenses/filter?startDate-endDate
+        [HttpGet("filter")]
+        public async Task<IActionResult> Filter(int userId, DateTime startDate, DateTime endDate)
+        {
+            //confirm endDate is greater than startDate
+            if (startDate > endDate)
+            {
+                return BadRequest("Invalid date range");
+            }
+
+            var expenses = await _db.Expenses
+                .AsNoTracking()
+                .Where(e => e.UserId == userId && !e.IsDeleted && e.ExpenseDate >= startDate && e.ExpenseDate <= endDate)
+                .Select(e => new ExpenseResponseDto
+                {
+                    ExpenseId = e.ExpenseId,
+                    Amount = e.Amount,
+                    Description = e.Description,
+                    ExpenseDate = e.ExpenseDate,
+                    CategoryName = e.Category.CategoryName
+                })
+                .OrderByDescending(e => e.ExpenseDate)
+                .ToListAsync();
+
+            return Ok(expenses);
         }
     }
 }

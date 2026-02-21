@@ -20,11 +20,9 @@ namespace FinPal.Expense.Api.Controllers
         }
 
         //POST: api/categories
-
         [HttpPost]
         public async Task<IActionResult> Create(CreateCategoryRequestDto request)
         {
-
             //check if user exists in Users table
             var userExists = await _db.Users.AnyAsync(u => u.UserID == request.UserId && u.IsActive);
 
@@ -34,8 +32,8 @@ namespace FinPal.Expense.Api.Controllers
             }
 
             //check if the category already exists
-
-            var categoryExists = await _db.Categories.AnyAsync(c => c.UserId == request.UserId && c.CategoryName == request.CategoryName);
+            var categoryExists = await _db.Categories
+                .AnyAsync(c => c.UserId == request.UserId && c.CategoryName == request.CategoryName);
 
             if (categoryExists)
             {
@@ -43,33 +41,27 @@ namespace FinPal.Expense.Api.Controllers
             }
 
             //create new category
-
             var category = new Category
             {
                 UserId = request.UserId,
                 CategoryName = request.CategoryName,
                 IsActive = true
-
             };
 
             _db.Categories.Add(category);
             await _db.SaveChangesAsync();
 
             //Response Dto
-
             var response = new CategoryResponseDto
             {
                 CategoryId = category.CategoryId,
                 CategoryName = category.CategoryName
-
             };
 
             return Ok(response);
-
         }
 
         //GET: api/categories?userId=1
-
         [HttpGet]
         public async Task<IActionResult> GetByUserId(int userId)
         {
@@ -86,12 +78,12 @@ namespace FinPal.Expense.Api.Controllers
         }
 
         //PUT: api/categories
-
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, CreateCategoryRequestDto request)
         {
             //check if the category exists
-            var category = await _db.Categories.FirstOrDefaultAsync(c => c.CategoryId == id && c.IsActive);
+            var category = await _db.Categories
+                .FirstOrDefaultAsync(c => c.CategoryId == id && c.IsActive);
 
             if (category == null)
             {
@@ -99,7 +91,8 @@ namespace FinPal.Expense.Api.Controllers
             }
 
             //check if name to be updated already exists
-            var duplicateExists = await _db.Categories.AnyAsync(c => c.UserId == request.UserId && c.CategoryName == request.CategoryName && c.CategoryId != id);
+            var duplicateExists = await _db.Categories
+                .AnyAsync(c => c.UserId == request.UserId && c.CategoryName == request.CategoryName && c.CategoryId != id);
 
             if (duplicateExists)
             {
@@ -114,7 +107,6 @@ namespace FinPal.Expense.Api.Controllers
         }
 
         //DELETE: api/categories
-
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -132,6 +124,5 @@ namespace FinPal.Expense.Api.Controllers
 
             return NoContent();
         }
-
     }
 }

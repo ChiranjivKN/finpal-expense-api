@@ -103,5 +103,30 @@ namespace FinPal.Expense.Api.Controllers
 
             return Ok(expenses);
         }
+
+        //DELETE: api/Expenses
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            //Check whether expense exists
+            var expense = await _db.Expenses
+                .FirstOrDefaultAsync(e => e.ExpenseId == id);
+
+            if (expense == null)
+            {
+                return NotFound("Invalid Expense");
+            }
+
+            if (expense.IsDeleted)
+            {
+                return NoContent();
+            }
+
+            expense.IsDeleted = true;
+
+            await _db.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 }

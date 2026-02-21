@@ -40,7 +40,7 @@ namespace FinPal.Expense.Api.Controllers
                 return BadRequest("Budget already exists for this month");
             }
 
-            var budget = new Budget
+            var budgets = new Budget
             {
                 UserId = request.UserId,
                 CategoryId = request.CategoryId,
@@ -49,10 +49,49 @@ namespace FinPal.Expense.Api.Controllers
                 BudgetAmount = request.BudgetAmount
             };
 
-            _db.Budgets.Add(budget);
+            _db.Budgets.Add(budgets);
             await _db.SaveChangesAsync();
             
             return Ok();
+        }
+
+        //GET: api/Budgets?userId=1&month=1&year=2026
+        [HttpGet("filter")]
+        public async Task<IActionResult> Filter(int userId, int? month, int? year)
+        {            
+            var query = _db.Budgets
+                .AsNoTracking()
+                .Where(b => b.UserId == userId);
+
+            if (month.HasValue)
+            {
+                if (month < 1 || month > 12)
+                {
+                    return BadRequest("Invalid month");
+                }
+
+                query = query.Where(b => b.Month == month.Value);
+            }
+
+            if (year.HasValue)
+            {
+                query = query.Where(b => b.Year == year.Value);
+            }
+
+            var budgets = await query                
+                .Select(b => new BudgetResponseDto
+                {
+                    BudgetId = b.BudgetId,
+                    CategoryName = b.Category.CategoryName,
+                    Month = b.Month,
+                    Year = b.Year,
+                    BudgetAmount = b.BudgetAmount
+                })
+                .OrderByDescending(b => b.Year)
+                .ThenByDescending(b => b.Month)
+                .ToListAsync();
+
+            return Ok(budgets);
         }
     }
 }

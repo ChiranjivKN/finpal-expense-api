@@ -93,5 +93,77 @@ namespace FinPal.Expense.Api.Controllers
 
             return Ok(budgets);
         }
+        
+        //GET: api/budgets/summary?userId1&month=1&year=2026
+        [HttpGet("summary")]
+        public async Task<IActionResult> GetSummary(int userId, int month, int year)
+        {            
+            //Validate month
+            if (month < 1 || month > 12)
+            {
+                return BadRequest("Invalid month");
+            }
+
+            //Validate user
+            var userExists = await _db.Users.AnyAsync(u => u.UserID == userId && u.IsActive);
+
+            if (!userExists)
+            {
+                return NotFound("User not found");
+            }
+
+            //Calculate total expenses
+            var expenseTotals = await _db.Expenses
+                .AsNoTracking()
+                .Where(e => e.UserId == userId && !e.IsDeleted && e.ExpenseDate.Month == month && e.ExpenseDate.Year == year)
+                .GroupBy(e => e.CategoryId)
+                .Select(g => new
+                {
+                    CategoryId = g.Key,
+                    TotalSpent = g.Sum(e => e.Amount)
+                })
+                .ToListAsync();
+
+            //Convert to dictionary lookup for fast access
+            var expenseLookup = expenseTotals.ToDictionary(
+                x => x.CategoryId,
+                x => x.TotalSpent);
+
+            //Fetch budgets
+            var budgets = await _db.Budgets
+                .AsNoTracking()
+                .Where(b => b.UserId == userId && b.Month == month && b.Year == year)
+                .Select(b => new 
+                {
+                    b.CategoryId,                    
+                    b.BudgetAmount,
+                    categoryName = b.Category.CategoryName                    
+                })
+                .ToListAsync();
+
+            //Get TotalSpent
+            var summary = budgets.Select(b =>
+            {
+                expenseLookup.TryGetValue(b.CategoryId, out var totalSpent);
+
+                return new BudgetSummaryDto
+                {
+                    CategoryName = b.categoryName,
+                    BudgetAmount = b.BudgetAmount,
+                    TotalSpent = totalSpent
+                };
+            })
+                .ToList();
+
+            //Calculate remaining amount and status
+            foreach (var item in summary)
+            {
+                item.Remaining = item.BudgetAmount - item.TotalSpent;
+
+                item.Status = item.TotalSpent > item.BudgetAmount ? "Overspent" : "Within Budget";
+            }
+
+            return Ok(summary);
+        }               
     }
 }

@@ -1,5 +1,6 @@
 using FinPal.Expense.Api.Data;
 using Microsoft.EntityFrameworkCore;
+using FinPal.Expense.Api.Middleware;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,6 +24,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();

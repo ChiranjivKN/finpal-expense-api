@@ -5,6 +5,7 @@ using FinPal.Expense.Api.DTO.Categories;
 using Microsoft.EntityFrameworkCore;
 using FinPal.Expense.Api.Entities;
 using Microsoft.Identity.Client;
+using FinPal.Expense.Api.Services.Categories;
 
 namespace FinPal.Expense.Api.Controllers
 {
@@ -12,115 +13,45 @@ namespace FinPal.Expense.Api.Controllers
     [ApiController]
     public class CategoriesController : ControllerBase
     {
-        private readonly FinPalDbContext _db;
+        private readonly ICategoryService _service;
 
-        public CategoriesController(FinPalDbContext db)
+        public CategoriesController(ICategoryService service)
         {
-            _db = db;
-        }
+            _service = service;
+        }        
 
         //POST: api/categories
         [HttpPost]
         public async Task<IActionResult> Create(CreateCategoryRequestDto request)
         {
-            //check if user exists in Users table
-            var userExists = await _db.Users.AnyAsync(u => u.UserID == request.UserId && u.IsActive);
-
-            if (!userExists)
-            {
-                return BadRequest("User does not exist!");
-            }
-
-            //check if the category already exists
-            var categoryExists = await _db.Categories
-                .AnyAsync(c => c.UserId == request.UserId && c.CategoryName == request.CategoryName);
-
-            if (categoryExists)
-            {
-                return BadRequest($"Category {request.CategoryName} already exists for {request.UserId}");
-            }
-
-            //create new category
-            var category = new Category
-            {
-                UserId = request.UserId,
-                CategoryName = request.CategoryName,
-                IsActive = true
-            };
-
-            _db.Categories.Add(category);
-            await _db.SaveChangesAsync();
-
-            //Response Dto
-            var response = new CategoryResponseDto
-            {
-                CategoryId = category.CategoryId,
-                CategoryName = category.CategoryName
-            };
+            var response = await _service.CreateAsync(request);          
 
             return Ok(response);
         }
 
-        //GET: api/categories?userId=1
+        //GET: api/categories?userId1
         [HttpGet]
-        public async Task<IActionResult> GetByUserId(int userId)
+        public async Task<IActionResult> GetByUser(int userId)
         {
-            var categories = await _db.Categories
-                .Where(c => c.UserId == userId && c.IsActive)
-                .Select(c => new CategoryResponseDto
-                {
-                    CategoryId = c.CategoryId,
-                    CategoryName = c.CategoryName
-                })
-                .ToListAsync();
+            var response = await _service.GetByUserAsync(userId);
 
-            return Ok(categories);
+            return Ok(response);
         }
 
-        //PUT: api/categories
+        //PUT: api/categories?categoryId1
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, CreateCategoryRequestDto request)
         {
-            //check if the category exists
-            var category = await _db.Categories
-                .FirstOrDefaultAsync(c => c.CategoryId == id && c.IsActive);
-
-            if (category == null)
-            {
-                return NotFound($"Category with ID {id} does not exist!");
-            }
-
-            //check if name to be updated already exists
-            var duplicateExists = await _db.Categories
-                .AnyAsync(c => c.UserId == request.UserId && c.CategoryName == request.CategoryName && c.CategoryId != id);
-
-            if (duplicateExists)
-            {
-                return BadRequest("Another category with same name exists");
-            }
-
-            category.CategoryName = request.CategoryName;
-
-            await _db.SaveChangesAsync();
+            await _service.UpdateAsync(id, request);
 
             return NoContent();
         }
 
-        //DELETE: api/categories
+        //DELETE: api/categories?categoryId1
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            //check if the Category exists
-            var category = await _db.Categories.FirstOrDefaultAsync(c => c.CategoryId == id && c.IsActive);
-
-            if(category == null)
-            {
-                return NotFound("Category does not exist");
-            }
-
-            category.IsActive = false;
-
-            await _db.SaveChangesAsync();
+            await _service.DeleteAsync(id);
 
             return NoContent();
         }

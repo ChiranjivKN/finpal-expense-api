@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using FinPal.Expense.Api.DTO.Expenses;
 using FinPal.Expense.Api.Entities;
 using Microsoft.EntityFrameworkCore;
+using FinPal.Expense.Api.Services.Expense;
 
 namespace FinPal.Expense.Api.Controllers
 {
@@ -12,120 +13,34 @@ namespace FinPal.Expense.Api.Controllers
     [ApiController]
     public class ExpensesController : ControllerBase
     {
-        private readonly FinPalDbContext _db;
+        private readonly IExpenseService _service;
 
-        public ExpensesController(FinPalDbContext db)
+        public ExpensesController(IExpenseService service)
         {
-            _db = db;
+            _service = service;
         }
 
-        //POST: api/Expenses
+        //POST: api/expenses
         [HttpPost]
         public async Task<IActionResult> Create(CreateExpenseRequestDto request)
         {
-            //Check if User exists
-            var userExists = await _db.Users
-                .AnyAsync(u => u.UserID == request.UserId && u.IsActive);
-
-            if (!userExists)
-            {
-                return BadRequest("Invalid user.");
-            }
-
-            //Check if User-Category composite exists
-            var categoryExists = await _db.Categories
-                .AnyAsync(c => c.CategoryId == request.CategoryId && c.UserId == request.UserId && c.IsActive);
-
-            if(!categoryExists)
-            {
-                return BadRequest("Invalid category.");
-            }
-
-            var expenses = new Expenses
-            {
-                UserId = request.UserId,
-                CategoryId = request.CategoryId,
-                Amount = request.Amount,
-                Description = request.Description,
-                ExpenseDate = request.ExpenseDate
-            };
-
-            _db.Expenses.Add(expenses);
-            await _db.SaveChangesAsync();
-
+            await _service.CreateAsync(request);
             return Ok();            
         }
 
-        //GET: api/Expenses
-        [HttpGet]
-        public async Task<IActionResult> GetByUserId(int userId)
-        {
-            var expenses = await _db.Expenses
-                .AsNoTracking()
-                .Where(e => e.UserId == userId && !e.IsDeleted)
-                .Select(e => new ExpenseResponseDto
-                {
-                    ExpenseId = e.ExpenseId,
-                    Amount = e.Amount,
-                    Description = e.Description,
-                    ExpenseDate = e.ExpenseDate,
-                    CategoryName = e.Category.CategoryName
-                })
-                .OrderByDescending(e => e.ExpenseDate)
-                .ToListAsync();
-
-            return Ok(expenses);            
-        }
-
-        //GET: api/Expenses/filter?startDate-endDate
+        //GET: api/Expenses/filter?userId1&startDate=2026-01-01&endDate=2026-01-31
         [HttpGet("filter")]
-        public async Task<IActionResult> Filter(int userId, DateTime startDate, DateTime endDate)
+        public async Task<IActionResult> Filter(int userId, DateTime? startDate, DateTime? endDate)
         {
-            //confirm endDate is greater than startDate
-            if (startDate > endDate)
-            {
-                return BadRequest("Invalid date range");
-            }
-
-            var expenses = await _db.Expenses
-                .AsNoTracking()
-                .Where(e => e.UserId == userId && !e.IsDeleted && e.ExpenseDate >= startDate && e.ExpenseDate <= endDate)
-                .Select(e => new ExpenseResponseDto
-                {
-                    ExpenseId = e.ExpenseId,
-                    Amount = e.Amount,
-                    Description = e.Description,
-                    ExpenseDate = e.ExpenseDate,
-                    CategoryName = e.Category.CategoryName
-                })
-                .OrderByDescending(e => e.ExpenseDate)
-                .ToListAsync();
-
-            return Ok(expenses);
+            var response = await _service.FilterAsync(userId, startDate, endDate);
+            return Ok(response);
         }
 
-        //DELETE: api/Expenses
+        //DELETE: api/expenses?id1
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            //Check whether expense exists
-            var expense = await _db.Expenses
-                .FirstOrDefaultAsync(e => e.ExpenseId == id);
-
-            if (expense == null)
-            {
-                return NotFound("Invalid Expense");
-            }
-
-            if (expense.IsDeleted)
-            {
-                return NoContent();
-            }
-
-            expense.IsDeleted = true;
-
-            await _db.SaveChangesAsync();
-
+            await _service.DeleteAsync(id);
             return NoContent();
         }
     }

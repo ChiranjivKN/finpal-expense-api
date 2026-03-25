@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using FinPal.Expense.Api.Middleware;
 using FinPal.Expense.Api.Services.Categories;
 using FinPal.Expense.Api.Services.Expense;
+using FinPal.Expense.Api.Services.Budgets;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +14,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IExpenseService, ExpenseService>();
+builder.Services.AddScoped<IBudgetService, BudgetService>();
 
 //Initializing connection string
 builder.Services.AddDbContext<FinPalDbContext>(options =>

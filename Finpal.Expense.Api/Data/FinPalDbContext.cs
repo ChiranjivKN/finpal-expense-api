@@ -25,7 +25,8 @@ public class FinPalDbContext : DbContext
             entity.HasKey(u => u.UserID);
             entity.Property(u => u.FullName).HasMaxLength(100).IsRequired();
             entity.Property(u => u.Email).HasMaxLength(150).IsRequired();
-            entity.Property(u => u.PasswordHash).HasMaxLength(256).IsRequired();
+            entity.Property(u => u.Password).HasMaxLength(256).IsRequired();
+            entity.Property(u => u.CreatedAt).HasDefaultValueSql("GETDATE()").ValueGeneratedOnAdd();
             entity.Property(u => u.IsActive).HasDefaultValue(true);
             entity.HasIndex(u => u.Email).IsUnique().HasDatabaseName("UQ_Users_Email");
 

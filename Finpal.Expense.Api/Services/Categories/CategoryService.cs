@@ -15,10 +15,10 @@ namespace FinPal.Expense.Api.Services.Categories
         }
 
         //CreateCategory and return created
-        public async Task<CategoryResponseDto> CreateAsync(CreateCategoryRequestDto request)
+        public async Task<CategoryResponseDto> CreateAsync(int userId, CreateCategoryRequestDto request)
         {
             var userExists = await _db.Users
-                .AnyAsync(u => u.UserID == request.UserId && u.IsActive);
+                .AnyAsync(u => u.UserID == userId && u.IsActive);
 
             if (!userExists)
             {
@@ -26,7 +26,7 @@ namespace FinPal.Expense.Api.Services.Categories
             }
 
             var categoryExists = await _db.Categories
-                .AnyAsync(c => c.CategoryName == request.CategoryName && c.UserId == request.UserId && c.IsActive);
+                .AnyAsync(c => c.CategoryName == request.CategoryName && c.UserId == userId && c.IsActive);
 
             if (categoryExists)
             {
@@ -35,8 +35,9 @@ namespace FinPal.Expense.Api.Services.Categories
 
             var category = new Category
             {
-                UserId = request.UserId,
-                CategoryName = request.CategoryName.Trim()
+                UserId = userId,
+                CategoryName = request.CategoryName.Trim(),
+                IsActive = true
             };
 
             _db.Categories.Add(category);
@@ -45,7 +46,7 @@ namespace FinPal.Expense.Api.Services.Categories
             var response = new CategoryResponseDto
             {
                 CategoryId = category.CategoryId,
-                CategoryName = category.CategoryName
+                CategoryName = category.CategoryName,                
             };
            
             return response;
@@ -68,7 +69,7 @@ namespace FinPal.Expense.Api.Services.Categories
         }
 
         //UpdateCategory
-        public async Task UpdateAsync(int id, CreateCategoryRequestDto request)
+        public async Task UpdateAsync(int id, int userId, CreateCategoryRequestDto request)
         {                           
             var category = await _db.Categories
                 .FirstOrDefaultAsync(c => c.CategoryId == id && c.IsActive);
@@ -79,7 +80,7 @@ namespace FinPal.Expense.Api.Services.Categories
             }
 
             var duplicate = await _db.Categories
-                .AnyAsync(c => c.UserId == request.UserId && c.CategoryName == request.CategoryName && c.IsActive && c.CategoryId != id);
+                .AnyAsync(c => c.UserId == userId && c.CategoryName == request.CategoryName && c.IsActive && c.CategoryId != id);
 
             if (duplicate)
             {

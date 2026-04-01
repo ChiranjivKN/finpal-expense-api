@@ -5,9 +5,6 @@ namespace FinPal.Expense.Api.DTO.Expenses
     public class CreateExpenseRequestDto
     {
         [Required]
-        public int UserId { get; set; }
-
-        [Required]
         public int CategoryId { get; set; }
 
         [Range(0.01, 10000000)]

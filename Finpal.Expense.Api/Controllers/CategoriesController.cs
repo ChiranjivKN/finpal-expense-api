@@ -6,33 +6,43 @@ using Microsoft.EntityFrameworkCore;
 using FinPal.Expense.Api.Entities;
 using Microsoft.Identity.Client;
 using FinPal.Expense.Api.Services.Categories;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using FinPal.Expense.Api.Services.UserId;
 
 namespace FinPal.Expense.Api.Controllers
-{
+{    
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class CategoriesController : ControllerBase
     {
         private readonly ICategoryService _service;
+        private readonly ICurrentUserService _currentUser;
 
-        public CategoriesController(ICategoryService service)
+        public CategoriesController(ICategoryService service, ICurrentUserService currentUser)
         {
             _service = service;
+            _currentUser = currentUser;
         }        
 
         //POST: api/categories
         [HttpPost]
         public async Task<IActionResult> Create(CreateCategoryRequestDto request)
         {
-            var response = await _service.CreateAsync(request);          
+            var userId = _currentUser.UserId;
+
+            var response = await _service.CreateAsync(userId, request);          
 
             return Ok(response);
         }
 
-        //GET: api/categories?userId1
+        //GET: api/categories
         [HttpGet]
-        public async Task<IActionResult> GetByUser(int userId)
+        public async Task<IActionResult> GetByUser()
         {
+            var userId = _currentUser.UserId;
+
             var response = await _service.GetByUserAsync(userId);
 
             return Ok(response);
@@ -42,7 +52,9 @@ namespace FinPal.Expense.Api.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, CreateCategoryRequestDto request)
         {
-            await _service.UpdateAsync(id, request);
+            var userId = _currentUser.UserId;
+
+            await _service.UpdateAsync(id, userId, request);
 
             return NoContent();
         }

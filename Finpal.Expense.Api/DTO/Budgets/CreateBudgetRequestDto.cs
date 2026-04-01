@@ -7,9 +7,6 @@ namespace FinPal.Expense.Api.DTO.Budgets
     public class CreateBudgetRequestDto
     {
         [Required]
-        public int UserId { get; set; }
-
-        [Required]
         public int CategoryId { get; set; }
         
         [Range(1, 12)]

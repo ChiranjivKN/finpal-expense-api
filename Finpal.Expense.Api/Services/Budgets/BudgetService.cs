@@ -14,12 +14,12 @@ namespace FinPal.Expense.Api.Services.Budgets
             _db = db;
         }
 
-        public async Task CreateAsync(CreateBudgetRequestDto request)
+        public async Task CreateAsync(int userId,CreateBudgetRequestDto request)
         {
             //Verify category ownership
             var categoryExists = await _db.Categories
                 .AsNoTracking()
-                .AnyAsync(c => c.CategoryId == request.CategoryId && c.UserId == c.UserId && c.IsActive);
+                .AnyAsync(c => c.CategoryId == request.CategoryId && c.UserId == userId && c.IsActive);
 
             if (!categoryExists)
             {
@@ -29,7 +29,7 @@ namespace FinPal.Expense.Api.Services.Budgets
             //prevent duplicate budget
             var budgetExists = await _db.Budgets
                 .AsNoTracking()
-                .AnyAsync(b => b.CategoryId == request.CategoryId && b.UserId == request.UserId && b.Month == request.Month && b.Year == request.Year);
+                .AnyAsync(b => b.CategoryId == request.CategoryId && b.UserId == userId && b.Month == request.Month && b.Year == request.Year);
 
             if (budgetExists)
             {
@@ -38,7 +38,7 @@ namespace FinPal.Expense.Api.Services.Budgets
 
             var budgets = new Budget
             {
-                UserId = request.UserId,
+                UserId = userId,
                 CategoryId = request.CategoryId,
                 Month = request.Month,
                 Year = request.Year,

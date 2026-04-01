@@ -16,11 +16,11 @@ namespace FinPal.Expense.Api.Services.Expense
         }
 
         //CreateExpense
-        public async Task CreateAsync(CreateExpenseRequestDto request)
+        public async Task CreateAsync(int userId, CreateExpenseRequestDto request)
         {
             var userExists = await _db.Users
                 .AsNoTracking()
-                .AnyAsync(u => u.UserID == request.UserId && u.IsActive);
+                .AnyAsync(u => u.UserID == userId && u.IsActive);
 
             if (!userExists)
             {
@@ -29,7 +29,7 @@ namespace FinPal.Expense.Api.Services.Expense
 
             var categoryExists = await _db.Categories
                 .AsNoTracking()
-                .AnyAsync(c => c.UserId == request.UserId && c.CategoryId == request.CategoryId && c.IsActive);
+                .AnyAsync(c => c.UserId == userId && c.CategoryId == request.CategoryId && c.IsActive);
 
             if (!categoryExists)
             {
@@ -38,11 +38,11 @@ namespace FinPal.Expense.Api.Services.Expense
 
             var expense = new Expenses
             {
-                UserId = request.UserId,
+                UserId = userId,
                 CategoryId = request.CategoryId,
                 Amount = request.Amount,
                 Description = request.Description,
-                ExpenseDate = request.ExpenseDate
+                ExpenseDate = request.ExpenseDate                
             };
 
             _db.Expenses.Add(expense);

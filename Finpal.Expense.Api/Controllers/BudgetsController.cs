@@ -6,8 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using FinPal.Expense.Api.Entities;
 using FinPal.Expense.Api.Services.Budgets;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
-using FinPal.Expense.Api.Services.UserId;
 
 namespace FinPal.Expense.Api.Controllers
 {    
@@ -17,20 +15,16 @@ namespace FinPal.Expense.Api.Controllers
     public class BudgetsController : ControllerBase
     {
         private readonly IBudgetService _service;
-        private readonly ICurrentUserService _currentUser;
-        public BudgetsController(IBudgetService service, ICurrentUserService currentUser)
+        public BudgetsController(IBudgetService service)
         {
             _service = service;
-            _currentUser = currentUser;
         }
 
         //POST: api/Budgets
         [HttpPost]
         public async Task<IActionResult> Create(CreateBudgetRequestDto request)
         {
-            var userId = _currentUser.UserId;
-
-            await _service.CreateAsync(userId, request);
+            await _service.CreateAsync(request);
 
             return Ok();
         }
@@ -39,9 +33,7 @@ namespace FinPal.Expense.Api.Controllers
         [HttpGet("filter")]
         public async Task<IActionResult> Filter(int? month, int? year)
         {
-            var userId = _currentUser.UserId;
-
-            var response = await _service.FilterAsync(userId, month, year); 
+            var response = await _service.FilterAsync(month, year); 
 
             return Ok(response);
         }
@@ -50,9 +42,7 @@ namespace FinPal.Expense.Api.Controllers
         [HttpGet("summary")]
         public async Task<IActionResult> GetSummary(int month, int year)
         {
-            var userId =_currentUser.UserId;
-
-            var response = await _service.GetSummaryAsync(userId, month, year);    
+            var response = await _service.GetSummaryAsync(month, year);    
             
             return Ok(response);
         }               

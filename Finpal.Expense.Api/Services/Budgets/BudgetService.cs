@@ -2,24 +2,29 @@
 using FinPal.Expense.Api.DTO.Budgets;
 using Microsoft.EntityFrameworkCore;
 using FinPal.Expense.Api.Entities;
+using FinPal.Expense.Api.Services.UserId;
 
 namespace FinPal.Expense.Api.Services.Budgets
 {
     public class BudgetService : IBudgetService
     {
         private readonly FinPalDbContext _db;
+        private readonly ICurrentUserService _currentUser;
 
-        public BudgetService(FinPalDbContext db)
+        public BudgetService(FinPalDbContext db, ICurrentUserService currentUser)
         {
             _db = db;
+            _currentUser = currentUser;
         }
 
-        public async Task CreateAsync(int userId,CreateBudgetRequestDto request)
+        private int UserId => _currentUser.UserId;
+
+        public async Task CreateAsync(CreateBudgetRequestDto request)
         {
             //Verify category ownership
             var categoryExists = await _db.Categories
                 .AsNoTracking()
-                .AnyAsync(c => c.CategoryId == request.CategoryId && c.UserId == userId && c.IsActive);
+                .AnyAsync(c => c.CategoryId == request.CategoryId && c.UserId == UserId && c.IsActive);
 
             if (!categoryExists)
             {
@@ -29,7 +34,7 @@ namespace FinPal.Expense.Api.Services.Budgets
             //prevent duplicate budget
             var budgetExists = await _db.Budgets
                 .AsNoTracking()
-                .AnyAsync(b => b.CategoryId == request.CategoryId && b.UserId == userId && b.Month == request.Month && b.Year == request.Year);
+                .AnyAsync(b => b.CategoryId == request.CategoryId && b.UserId == UserId && b.Month == request.Month && b.Year == request.Year);
 
             if (budgetExists)
             {
@@ -38,7 +43,7 @@ namespace FinPal.Expense.Api.Services.Budgets
 
             var budgets = new Budget
             {
-                UserId = userId,
+                UserId = UserId,
                 CategoryId = request.CategoryId,
                 Month = request.Month,
                 Year = request.Year,
@@ -50,11 +55,11 @@ namespace FinPal.Expense.Api.Services.Budgets
             await _db.SaveChangesAsync();
         }
 
-        public async Task <List<BudgetResponseDto>> FilterAsync(int userID, int? Month, int? Year)
+        public async Task <List<BudgetResponseDto>> FilterAsync(int? Month, int? Year)
         {
             var userExists = await _db.Users
                 .AsNoTracking()
-                .AnyAsync(u => u.UserID == userID && u.IsActive);
+                .AnyAsync(u => u.UserID == UserId && u.IsActive);
 
             if (!userExists)
             {
@@ -63,7 +68,7 @@ namespace FinPal.Expense.Api.Services.Budgets
 
             var query = _db.Budgets
                 .AsNoTracking()
-                .Where(b => b.UserId == userID);
+                .Where(b => b.UserId == UserId);
 
             if (Month.HasValue)
             {
@@ -95,11 +100,11 @@ namespace FinPal.Expense.Api.Services.Budgets
             return budgets;
         }
 
-        public async Task<List<BudgetSummaryDto>> GetSummaryAsync(int userId, int month, int year)
+        public async Task<List<BudgetSummaryDto>> GetSummaryAsync(int month, int year)
         {
             var userExists = await _db.Users
                 .AsNoTracking()
-                .AnyAsync(u => u.UserID == userId && u.IsActive);
+                .AnyAsync(u => u.UserID == UserId && u.IsActive);
 
             if (!userExists)
             {
@@ -114,7 +119,7 @@ namespace FinPal.Expense.Api.Services.Budgets
             //Calculate total expenses
             var totalExpenses = await _db.Expenses
                 .AsNoTracking()
-                .Where(e => e.UserId == userId && e.ExpenseDate.Month == month && e.ExpenseDate.Year == year && !e.IsDeleted)
+                .Where(e => e.UserId == UserId && e.ExpenseDate.Month == month && e.ExpenseDate.Year == year && !e.IsDeleted)
                 .GroupBy(e => e.CategoryId)
                 .Select(g => new
                 {
@@ -131,7 +136,7 @@ namespace FinPal.Expense.Api.Services.Budgets
             //fetch budgets
             var budgets = await _db.Budgets
                 .AsNoTracking()
-                .Where(b => b.UserId == userId && b.Month == month && b.Year == year)
+                .Where(b => b.UserId == UserId && b.Month == month && b.Year == year)
                 .Select(b => new
                 {
                     b.CategoryId,

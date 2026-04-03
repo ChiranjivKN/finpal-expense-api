@@ -18,21 +18,16 @@ namespace FinPal.Expense.Api.Controllers
     public class CategoriesController : ControllerBase
     {
         private readonly ICategoryService _service;
-        private readonly ICurrentUserService _currentUser;
-
-        public CategoriesController(ICategoryService service, ICurrentUserService currentUser)
+        public CategoriesController(ICategoryService service)
         {
             _service = service;
-            _currentUser = currentUser;
         }        
 
         //POST: api/categories
         [HttpPost]
         public async Task<IActionResult> Create(CreateCategoryRequestDto request)
         {
-            var userId = _currentUser.UserId;
-
-            var response = await _service.CreateAsync(userId, request);          
+            var response = await _service.CreateAsync(request);          
 
             return Ok(response);
         }
@@ -41,9 +36,7 @@ namespace FinPal.Expense.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetByUser()
         {
-            var userId = _currentUser.UserId;
-
-            var response = await _service.GetByUserAsync(userId);
+            var response = await _service.GetByUserAsync();
 
             return Ok(response);
         }
@@ -52,9 +45,7 @@ namespace FinPal.Expense.Api.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, CreateCategoryRequestDto request)
         {
-            var userId = _currentUser.UserId;
-
-            await _service.UpdateAsync(id, userId, request);
+            await _service.UpdateAsync(id, request);
 
             return NoContent();
         }

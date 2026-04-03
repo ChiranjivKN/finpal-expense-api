@@ -3,21 +3,26 @@ using FinPal.Expense.Api.DTO.Expenses;
 using Microsoft.EntityFrameworkCore;
 using FinPal.Expense.Api.Entities;
 using Microsoft.EntityFrameworkCore.Query.Internal;
+using FinPal.Expense.Api.Services.UserId;
 
 namespace FinPal.Expense.Api.Services.Expense
 {
     public class ExpenseService : IExpenseService
     {
         private readonly FinPalDbContext _db;
+        private readonly ICurrentUserService _currentUser;
 
-        public ExpenseService(FinPalDbContext db)
+        public ExpenseService(FinPalDbContext db, ICurrentUserService currentUser)
         {
             _db = db;
+            _currentUser = currentUser;
         }
 
         //CreateExpense
-        public async Task CreateAsync(int userId, CreateExpenseRequestDto request)
+        public async Task CreateAsync(CreateExpenseRequestDto request)
         {
+            var userId = _currentUser.UserId;
+
             var userExists = await _db.Users
                 .AsNoTracking()
                 .AnyAsync(u => u.UserID == userId && u.IsActive);
@@ -51,8 +56,10 @@ namespace FinPal.Expense.Api.Services.Expense
         }
 
         //GetExpense by filters
-        public async Task<List<ExpenseResponseDto>> FilterAsync(int userId, DateTime? startDate, DateTime? endDate)
+        public async Task<List<ExpenseResponseDto>> FilterAsync(DateTime? startDate, DateTime? endDate)
         {
+            var userId = _currentUser.UserId;
+
             var userExists = await _db.Users
                 .AsNoTracking()
                 .AnyAsync(u => u.UserID == userId && u.IsActive);            

@@ -17,22 +17,18 @@ namespace FinPal.Expense.Api.Controllers
     [Authorize]
     public class ExpensesController : ControllerBase
     {
-        private readonly IExpenseService _service;
-        private readonly ICurrentUserService _currentUser;
+        private readonly IExpenseService _service;        
 
-        public ExpensesController(IExpenseService service, ICurrentUserService currentUser)
+        public ExpensesController(IExpenseService service)
         {
-            _service = service;
-            _currentUser = currentUser;
+            _service = service;            
         }
 
         //POST: api/expenses
         [HttpPost]
         public async Task<IActionResult> Create(CreateExpenseRequestDto request)
-        {
-            var userId = _currentUser.UserId;
-
-            await _service.CreateAsync(userId, request);
+        {        
+            await _service.CreateAsync(request);
 
             return Ok();            
         }
@@ -41,9 +37,7 @@ namespace FinPal.Expense.Api.Controllers
         [HttpGet("filter")]
         public async Task<IActionResult> Filter(DateTime? startDate, DateTime? endDate)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-
-            var response = await _service.FilterAsync(userId, startDate, endDate);
+            var response = await _service.FilterAsync(startDate, endDate);
 
             return Ok(response);
         }

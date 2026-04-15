@@ -17,22 +17,28 @@ namespace FinPal.Expense.Api.Services.Auth
         private readonly FinPalDbContext _db;
         private readonly IConfiguration _config;
         private readonly IPasswordService _passwordService;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService (FinPalDbContext db, IPasswordService passwordService, IConfiguration config)
+        public AuthService (FinPalDbContext db, IPasswordService passwordService, IConfiguration config, ILogger<AuthService> logger)
         {
             _db = db;
             _config = config;
             _passwordService = passwordService;
+            _logger = logger;
         }
 
         public async Task RegisterAsync(RegisterUserRequestDto request)
         {
+            _logger.LogInformation("Registration attempt for email {Email}", request.Email);
+
             var emailExists = await _db.Users
                 .AsNoTracking()
                 .AnyAsync(u => u.Email == request.Email);
 
             if (emailExists)
             {
+                _logger.LogWarning("Failed registration attempt for email {Email}", request.Email);
+
                 throw new Exception("Email already exists");
             }
 
@@ -47,15 +53,21 @@ namespace FinPal.Expense.Api.Services.Auth
             _db.Users.Add(user);
 
             await _db.SaveChangesAsync();
+
+            _logger.LogInformation("New user {UserId} created successfully", user.UserID);
         }
 
         public async Task<string> LoginAsync(LoginRequestDto request)
         {
+            _logger.LogInformation("Login attempt for email {Email}", request.Email);
+
             var user = await _db.Users                
                 .FirstOrDefaultAsync(u => u.Email == request.Email && u.IsActive);
 
             if (user == null)
             {
+                _logger.LogWarning("Failed login attempt for email {Email}", request.Email);
+
                 throw new AuthenticationException("Invalid email or password");
             }
 
@@ -63,8 +75,12 @@ namespace FinPal.Expense.Api.Services.Auth
 
             if (!verifyPassword)
             {
+                _logger.LogWarning("Failed login attempt for email {Email}", request.Email);
+
                 throw new AuthenticationException("Invalid email or password");
             }
+
+            _logger.LogInformation("User {UserId} logged in successfully", user.UserID);
 
             return GenerateToken(user);
         }

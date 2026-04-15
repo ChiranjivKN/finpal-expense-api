@@ -10,11 +10,13 @@ namespace FinPal.Expense.Api.Services.Categories
     {
         private readonly FinPalDbContext _db;
         private readonly ICurrentUserService _currentUser;
+        private readonly ILogger<CategoryService> _logger;
 
-        public CategoryService(FinPalDbContext db, ICurrentUserService currentUser)
+        public CategoryService(FinPalDbContext db, ICurrentUserService currentUser, ILogger<CategoryService> logger)
         {
             _db = db;
             _currentUser = currentUser;
+            _logger = logger;
         }
 
         private int UserId => _currentUser.UserId;
@@ -27,6 +29,8 @@ namespace FinPal.Expense.Api.Services.Categories
 
             if (!userExists)
             {
+                _logger.LogWarning("Invalid user {UserId} attempted to create category.", UserId);
+
                 throw new KeyNotFoundException("Invalid user");
             }
 
@@ -35,6 +39,8 @@ namespace FinPal.Expense.Api.Services.Categories
 
             if (categoryExists)
             {
+                _logger.LogWarning("User {UserId} attempted to create duplicate category.", UserId);
+
                 throw new Exception("Category already exists");
             }
 
@@ -53,7 +59,9 @@ namespace FinPal.Expense.Api.Services.Categories
                 CategoryId = category.CategoryId,
                 CategoryName = category.CategoryName,                
             };
-           
+
+            _logger.LogInformation("Category {CategoryId} created successfully for user {UserId}", response.CategoryId, UserId);
+
             return response;
         }
         
@@ -70,17 +78,23 @@ namespace FinPal.Expense.Api.Services.Categories
                 })
                 .ToListAsync();
 
+            _logger.LogInformation("User {UserId} fetched {Count} categories.", UserId, response.Count);
+
             return response;
         }
 
         //UpdateCategory
         public async Task UpdateAsync(int id, CreateCategoryRequestDto request)
         {
+            _logger.LogInformation("User {UserId} attempting to update category {CategoryId}.", UserId, id);
+
             var category = await _db.Categories
                 .FirstOrDefaultAsync(c => c.CategoryId == id && c.IsActive);
 
             if (category == null)
             {
+                _logger.LogWarning("User {UserId} attempted to update invalid category.", UserId);
+
                 throw new KeyNotFoundException("Category does not exist");
             }
 
@@ -89,28 +103,38 @@ namespace FinPal.Expense.Api.Services.Categories
 
             if (duplicate)
             {
+                _logger.LogWarning("User {UserId} failed to update category {CategoryId}: The name {CategoryName} is already in use.", UserId, id, request.CategoryName);
+
                 throw new InvalidOperationException("Duplicate category");
             }
 
             category.CategoryName = request.CategoryName.Trim();
 
             await _db.SaveChangesAsync();
+
+            _logger.LogInformation("User {UserId} updated category {CategoryId}.", UserId, id);
         }
 
         //SoftDelete categories
         public async Task DeleteAsync(int id)
         {
+            _logger.LogInformation("User {UserId} attempting to delete category {CategoryId}", UserId, id);
+
             var category = await _db.Categories
                 .FirstOrDefaultAsync(c => c.CategoryId == id && c.IsActive);
 
             if (category == null)
             {
+                _logger.LogWarning("User {UserId} attempted to delete invalid category {CategoryId}", UserId, id);
+
                 throw new KeyNotFoundException("Category not found!");
             }
 
             category.IsActive = false;
 
             await _db.SaveChangesAsync();
+
+            _logger.LogInformation("User {UserId} deleted category {CategoryId}", UserId, id);
         }
     }
 }

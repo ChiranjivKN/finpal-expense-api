@@ -10,17 +10,21 @@ namespace FinPal.Expense.Api.Services.Budgets
     {
         private readonly FinPalDbContext _db;
         private readonly ICurrentUserService _currentUser;
+        private readonly ILogger<BudgetService> _logger;
 
-        public BudgetService(FinPalDbContext db, ICurrentUserService currentUser)
+        public BudgetService(FinPalDbContext db, ICurrentUserService currentUser, ILogger<BudgetService> logger)
         {
             _db = db;
             _currentUser = currentUser;
+            _logger = logger;
         }
 
         private int UserId => _currentUser.UserId;
 
         public async Task CreateAsync(CreateBudgetRequestDto request)
         {
+            _logger.LogInformation("User {UserId} attempting to create new budget", UserId);
+
             //Verify category ownership
             var categoryExists = await _db.Categories
                 .AsNoTracking()
@@ -28,6 +32,8 @@ namespace FinPal.Expense.Api.Services.Budgets
 
             if (!categoryExists)
             {
+                _logger.LogWarning("User {UserId} attempted to create budget with invalid category {CategoryId}.", UserId, request.CategoryId);
+
                 throw new KeyNotFoundException("Invalid category");
             }
 
@@ -38,6 +44,8 @@ namespace FinPal.Expense.Api.Services.Budgets
 
             if (budgetExists)
             {
+                _logger.LogWarning("User {UserId} failed to create budget: Category {CategoryId} already has a budget for {Month}/{Year}.", UserId, request.CategoryId, request.Month, request.Year);
+
                 throw new InvalidOperationException("Budget already exists for this month");
             }
 
@@ -53,6 +61,8 @@ namespace FinPal.Expense.Api.Services.Budgets
             _db.Budgets.Add(budgets);
 
             await _db.SaveChangesAsync();
+
+            _logger.LogInformation("Budget created for category {CategoryId} for {Month}/{Year} for user {UserId}.", request.CategoryId, request.Month, request.Year, UserId);
         }
 
         public async Task <List<BudgetResponseDto>> FilterAsync(int? Month, int? Year)
@@ -63,6 +73,8 @@ namespace FinPal.Expense.Api.Services.Budgets
 
             if (!userExists)
             {
+                _logger.LogWarning("Invalid user {UserId} attempted to fetch budget", UserId);
+
                 throw new KeyNotFoundException("Invalid user");
             }
 
@@ -74,6 +86,8 @@ namespace FinPal.Expense.Api.Services.Budgets
             {
                 if (Month.Value < 1 && Month.Value > 12)
                 {
+                    _logger.LogWarning("User {UserId} attempted to fetch budget for invalid month {Month}", UserId, Month.Value);
+
                     throw new ArgumentException("Invalid month");
                 }
                 query = query.Where(b => b.Month == Month.Value);
@@ -97,6 +111,8 @@ namespace FinPal.Expense.Api.Services.Budgets
                 .ThenByDescending(b => b.Month)
                 .ToListAsync();
 
+            _logger.LogInformation("User {UserId} fetched {Count} budgets.", UserId, budgets.Count);
+
             return budgets;
         }
 
@@ -108,11 +124,15 @@ namespace FinPal.Expense.Api.Services.Budgets
 
             if (!userExists)
             {
+                _logger.LogWarning("Invalid user {UserId} attempted to fetch budget summary.", UserId);
+
                 throw new KeyNotFoundException("User not found");
             }
 
             if (month < 1 || month > 12)
             {
+                _logger.LogWarning("User {UserId} attempted to fetch budget summary for invalid month {Month}.", UserId, month);
+
                 throw new ArgumentException("Invalid month");
             }
 
@@ -165,6 +185,8 @@ namespace FinPal.Expense.Api.Services.Budgets
                 item.Remaining = item.BudgetAmount - item.TotalSpent;
                 item.Status = item.TotalSpent > item.BudgetAmount ? "Overspent" : "Within budget";
             }
+
+            _logger.LogInformation("User {UserId} fetched {Count} budget summaries.", UserId, summary.Count);
 
             return(summary);
         }

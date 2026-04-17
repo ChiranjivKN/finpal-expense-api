@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using FinPal.Expense.Api.Common;
+using System.Net;
+using System.Security.Authentication;
 using System.Text.Json;
 
 namespace FinPal.Expense.Api.Middleware
@@ -20,13 +22,23 @@ namespace FinPal.Expense.Api.Middleware
             }
             catch (Exception ex)
             {
-                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 context.Response.ContentType = "application/json";
 
-                var response = new
+                var response = new ApiResponse<object>
                 {
-                    message = "Internal server error",
-                    detail = ex.Message
+                    Success = false,
+                    Message = ex.Message,
+                    Data = null
+                };
+
+                context.Response.StatusCode = ex switch
+                {
+                    ArgumentException => StatusCodes.Status400BadRequest,
+                    KeyNotFoundException => StatusCodes.Status404NotFound,
+                    UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+                    AuthenticationException => StatusCodes.Status401Unauthorized,
+                    InvalidOperationException => StatusCodes.Status409Conflict,
+                    _ => StatusCodes.Status500InternalServerError
                 };
 
                 await context.Response.WriteAsync(JsonSerializer.Serialize(response));

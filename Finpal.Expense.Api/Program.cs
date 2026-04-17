@@ -10,8 +10,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
-using FinPal.Expense.Api.Services.UserId;
-using FinPal.Expense.Api.Services.Common;
+using FinPal.Expense.Api.Infrastructure.CurrentUser;
 
 
 var builder = WebApplication.CreateBuilder(args);

@@ -3,6 +3,7 @@ using FinPal.Expense.Api.DTO.Users;
 using FinPal.Expense.Api.Services.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using FinPal.Expense.Api.Common;
 
 namespace FinPal.Expense.Api.Controllers
 {
@@ -22,7 +23,12 @@ namespace FinPal.Expense.Api.Controllers
         public async Task<IActionResult> Register(RegisterUserRequestDto request)
         {
             await _service.RegisterAsync(request);
-            return Ok();
+
+            return Ok(new ApiResponse<object>
+            {
+                Success = true,
+                Message = "User registered successfully"
+            });
         }
 
         //POST: api/auth/login

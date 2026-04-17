@@ -8,7 +8,7 @@ using Microsoft.Identity.Client;
 using FinPal.Expense.Api.Services.Categories;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
-using FinPal.Expense.Api.Services.UserId;
+using FinPal.Expense.Api.Common;
 
 namespace FinPal.Expense.Api.Controllers
 {    
@@ -27,9 +27,14 @@ namespace FinPal.Expense.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(CreateCategoryRequestDto request)
         {
-            var response = await _service.CreateAsync(request);          
+            var response = await _service.CreateAsync(request);
 
-            return Ok(response);
+            return Ok(new ApiResponse<CategoryResponseDto>
+            {
+                Success = true,
+                Message = "Category created successfully",
+                Data = response
+            });
         }
 
         //GET: api/categories
@@ -38,7 +43,12 @@ namespace FinPal.Expense.Api.Controllers
         {
             var response = await _service.GetByUserAsync();
 
-            return Ok(response);
+            return Ok(new ApiResponse<List<CategoryResponseDto>>
+            {
+                Success = true,
+                Message = response.Any() ? "Categories fetched successfully" : "Categories not found",
+                Data = response
+            });
         }
 
         //PUT: api/categories?categoryId1
@@ -47,7 +57,11 @@ namespace FinPal.Expense.Api.Controllers
         {
             await _service.UpdateAsync(id, request);
 
-            return NoContent();
+            return Ok(new ApiResponse<object>
+            {
+                Success = true,
+                Message = "Category updated"
+            });
         }
 
         //DELETE: api/categories?categoryId1
@@ -56,7 +70,11 @@ namespace FinPal.Expense.Api.Controllers
         {
             await _service.DeleteAsync(id);
 
-            return NoContent();
+            return Ok(new ApiResponse<object>
+            {
+                Success = true,
+                Message = "Category deleted"
+            });
         }
     }
 }

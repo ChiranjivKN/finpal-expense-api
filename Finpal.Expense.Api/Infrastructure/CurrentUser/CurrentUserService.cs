@@ -1,14 +1,12 @@
-﻿using FinPal.Expense.Api.Services.UserId;
-using Microsoft.Identity.Client;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 
-namespace FinPal.Expense.Api.Services.Common
+namespace FinPal.Expense.Api.Infrastructure.CurrentUser
 {
     public class CurrentUserService : ICurrentUserService
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public CurrentUserService (IHttpContextAccessor httpContextAccessor)
+        public CurrentUserService(IHttpContextAccessor httpContextAccessor)
         {
             _httpContextAccessor = httpContextAccessor;
         }
@@ -24,6 +22,6 @@ namespace FinPal.Expense.Api.Services.Common
 
                 return int.Parse(userID!);
             }
-        }            
+        }
     }
 }

@@ -7,8 +7,7 @@ using FinPal.Expense.Api.Entities;
 using Microsoft.EntityFrameworkCore;
 using FinPal.Expense.Api.Services.Expense;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
-using FinPal.Expense.Api.Services.UserId;
+using FinPal.Expense.Api.Common;
 
 namespace FinPal.Expense.Api.Controllers
 {    
@@ -30,7 +29,11 @@ namespace FinPal.Expense.Api.Controllers
         {        
             await _service.CreateAsync(request);
 
-            return Ok();            
+            return Ok(new ApiResponse<object>
+            {
+                Success = true,
+                Message = "Expense created succesfully",              
+            });            
         }
 
         //GET: api/Expenses/filter?startDate=2026-01-01&endDate=2026-01-31
@@ -39,7 +42,12 @@ namespace FinPal.Expense.Api.Controllers
         {
             var response = await _service.FilterAsync(startDate, endDate);
 
-            return Ok(response);
+            return Ok(new ApiResponse<List<ExpenseResponseDto>>
+            {
+                Success = true,
+                Message = response.Any() ? "Expenses fetched successfully" : "No expenses found",
+                Data = response
+            });
         }
 
         //DELETE: api/expenses?id1
@@ -47,7 +55,11 @@ namespace FinPal.Expense.Api.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             await _service.DeleteAsync(id);
-            return NoContent();
+            return Ok(new ApiResponse<object>
+            {
+                Success = true,
+                Message = "Expense deleted"
+            });
         }
     }
 }

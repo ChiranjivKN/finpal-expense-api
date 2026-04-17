@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using FinPal.Expense.Api.Entities;
 using FinPal.Expense.Api.Services.Budgets;
 using Microsoft.AspNetCore.Authorization;
+using FinPal.Expense.Api.Common;
 
 namespace FinPal.Expense.Api.Controllers
 {    
@@ -26,7 +27,11 @@ namespace FinPal.Expense.Api.Controllers
         {
             await _service.CreateAsync(request);
 
-            return Ok();
+            return Ok(new ApiResponse<object>
+            {
+                Success = true,
+                Message = "Budget created successfully"
+            });
         }
 
         //GET: api/Budgets?month=1&year=2026
@@ -35,16 +40,26 @@ namespace FinPal.Expense.Api.Controllers
         {
             var response = await _service.FilterAsync(month, year); 
 
-            return Ok(response);
+            return Ok(new ApiResponse<List<BudgetResponseDto>>
+            {
+                Success = true,
+                Message = response.Any() ? "Budgets fetched successfully" : "Budgets not found",
+                Data = response
+            });
         }
         
         //GET: api/budgets/summary?month=1&year=2026
         [HttpGet("summary")]
         public async Task<IActionResult> GetSummary(int month, int year)
         {
-            var response = await _service.GetSummaryAsync(month, year);    
-            
-            return Ok(response);
+            var response = await _service.GetSummaryAsync(month, year);
+
+            return Ok(new ApiResponse<List<BudgetSummaryDto>>
+            {
+                Success = true,
+                Message = response.Any() ? "Budget summary fetched successfully" : "Budgets not found",
+                Data = response
+            });
         }               
     }
 }

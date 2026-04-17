@@ -2,7 +2,7 @@
 using FinPal.Expense.Api.DTO.Categories;
 using Microsoft.EntityFrameworkCore;
 using FinPal.Expense.Api.Entities;
-using FinPal.Expense.Api.Services.UserId;
+using FinPal.Expense.Api.Infrastructure.CurrentUser;
 
 namespace FinPal.Expense.Api.Services.Categories
 {

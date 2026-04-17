@@ -1,4 +1,4 @@
-﻿namespace FinPal.Expense.Api.Services.UserId
+﻿namespace FinPal.Expense.Api.Infrastructure.CurrentUser
 {
     public interface ICurrentUserService
     {

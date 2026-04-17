@@ -3,7 +3,7 @@ using FinPal.Expense.Api.DTO.Expenses;
 using Microsoft.EntityFrameworkCore;
 using FinPal.Expense.Api.Entities;
 using Microsoft.EntityFrameworkCore.Query.Internal;
-using FinPal.Expense.Api.Services.UserId;
+using FinPal.Expense.Api.Infrastructure.CurrentUser;
 
 namespace FinPal.Expense.Api.Services.Expense
 {

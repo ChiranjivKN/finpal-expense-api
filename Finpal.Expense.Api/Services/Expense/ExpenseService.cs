@@ -20,38 +20,39 @@ namespace FinPal.Expense.Api.Services.Expense
             _logger = logger;
         }
 
+        private int UserId => _currentUser.UserId;
+
         //CreateExpense
         public async Task CreateAsync(CreateExpenseRequestDto request)
         {
-            var userId = _currentUser.UserId;
 
-            _logger.LogInformation("User {UserId} attempting to create expense of amount {Amount}", userId, request.Amount);
+            _logger.LogInformation("User {UserId} attempting to create expense of amount {Amount}", UserId, request.Amount);
 
             var userExists = await _db.Users
                 .AsNoTracking()
-                .AnyAsync(u => u.UserID == userId && u.IsActive);
+                .AnyAsync(u => u.UserID == UserId && u.IsActive);
 
             if (!userExists)
             {
-                _logger.LogWarning("Invalid user {UserId} attempted to create expense", userId);
+                _logger.LogWarning("Invalid user {UserId} attempted to create expense", UserId);
 
                 throw new KeyNotFoundException("Invalid User");
             }
 
             var categoryExists = await _db.Categories
                 .AsNoTracking()
-                .AnyAsync(c => c.UserId == userId && c.CategoryId == request.CategoryId && c.IsActive);
+                .AnyAsync(c => c.UserId == UserId && c.CategoryId == request.CategoryId && c.IsActive);
 
             if (!categoryExists)
             {
-                _logger.LogWarning("User {UserId} attempted to create expense for invalid category", userId);
+                _logger.LogWarning("User {UserId} attempted to create expense for invalid category", UserId);
 
                 throw new KeyNotFoundException("Invalid category");
             }
 
             var expense = new Expenses
             {
-                UserId = userId,
+                UserId = UserId,
                 CategoryId = request.CategoryId,
                 Amount = request.Amount,
                 Description = request.Description,
@@ -62,34 +63,33 @@ namespace FinPal.Expense.Api.Services.Expense
 
             await _db.SaveChangesAsync();
 
-            _logger.LogInformation("Expense {ExpenseId} created for user {UserId} successfully", expense.ExpenseId, userId);
+            _logger.LogInformation("Expense {ExpenseId} created for user {UserId} successfully", expense.ExpenseId, UserId);
         }
 
         //GetExpense by filters
         public async Task<List<ExpenseResponseDto>> FilterAsync(DateTime? startDate, DateTime? endDate)
         {
-            var userId = _currentUser.UserId;
 
-            _logger.LogInformation("User {UserId} attempting to fetch expenses with filters StartDate = {StartDate} and EndDate = {EndDate}", userId, startDate, endDate);
+            _logger.LogInformation("User {UserId} attempting to fetch expenses with filters StartDate = {StartDate} and EndDate = {EndDate}", UserId, startDate, endDate);
 
             var userExists = await _db.Users
                 .AsNoTracking()
-                .AnyAsync(u => u.UserID == userId && u.IsActive);            
+                .AnyAsync(u => u.UserID == UserId && u.IsActive);            
 
             if (!userExists)
             {
-                _logger.LogWarning("Invalid user {UserId} attempted to fetch expenses", userId);
+                _logger.LogWarning("Invalid user {UserId} attempted to fetch expenses", UserId);
 
                 throw new KeyNotFoundException("Invalid user");
             }
 
             var query = _db.Expenses
                 .AsNoTracking()
-                .Where(e => e.UserId == userId && !e.IsDeleted);
+                .Where(e => e.UserId == UserId && !e.IsDeleted);
 
             if (startDate.HasValue && endDate.HasValue && startDate.Value > endDate.Value)
             {
-                _logger.LogWarning("User {UserId} attempted to fetch expenses with invalid date range", userId);
+                _logger.LogWarning("User {UserId} attempted to fetch expenses with invalid date range", UserId);
 
                 throw new ArgumentException("Invalid date range");
             }
@@ -117,7 +117,7 @@ namespace FinPal.Expense.Api.Services.Expense
                 .ThenByDescending(e => e.ExpenseId)
                 .ToListAsync();
 
-            _logger.LogInformation("User {UserId} fetched {Count} expenses", userId, expenses.Count);
+            _logger.LogInformation("User {UserId} fetched {Count} expenses", UserId, expenses.Count);
 
             return expenses;            
         }
@@ -125,16 +125,15 @@ namespace FinPal.Expense.Api.Services.Expense
         //SoftDelete expenses
         public async Task DeleteAsync(int id)
         {
-            var userId = _currentUser.UserId;
 
-            _logger.LogInformation("User {UserId} attempting to delete expense {ExpenseId}", userId, id);
+            _logger.LogInformation("User {UserId} attempting to delete expense {ExpenseId}", UserId, id);
 
             var expense = await _db.Expenses
                 .FirstOrDefaultAsync(e => e.ExpenseId == id && !e.IsDeleted);            
 
             if (expense == null)
             {
-                _logger.LogWarning("User {UserId} attempted to delete invalid expense {ExpenseId}", userId, id);
+                _logger.LogWarning("User {UserId} attempted to delete invalid expense {ExpenseId}", UserId, id);
 
                 throw new KeyNotFoundException("Invalid expense");
             }
@@ -143,7 +142,7 @@ namespace FinPal.Expense.Api.Services.Expense
 
             await _db.SaveChangesAsync();
 
-            _logger.LogInformation("User {UserId} deleted expense {ExpenseId}", userId, id);
+            _logger.LogInformation("User {UserId} deleted expense {ExpenseId}", UserId, id);
         }
     }
 }

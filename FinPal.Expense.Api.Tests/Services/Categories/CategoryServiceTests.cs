@@ -11,6 +11,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using FinPal.Expense.Api.DTO.Categories;
 using Microsoft.Identity.Client;
+using Microsoft.Extensions.Configuration.UserSecrets;
+using NuGet.Frameworks;
 
 namespace FinPal.Expense.Api.Tests.Services.Category
 {
@@ -61,9 +63,11 @@ namespace FinPal.Expense.Api.Tests.Services.Category
             var result = await _service.CreateAsync(request);
 
             //Assert
-            Assert.That(result.CategoryName, Is.EqualTo("Test Category"));
-            Assert.That(_db.Categories.Count(), Is.EqualTo(1));
-
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.CategoryName, Is.EqualTo("Test Category"));
+                Assert.That(_db.Categories.Count(), Is.EqualTo(1));
+            });            
         }
 
         [Test]
@@ -99,10 +103,189 @@ namespace FinPal.Expense.Api.Tests.Services.Category
             //Act & Assert
             var ex = Assert.ThrowsAsync<Exception>(async () => await _service.CreateAsync(request));
 
-            Assert.That(ex!.Message, Is.EqualTo("Category already exists"));
+            Assert.Multiple(() =>
+            {
+                Assert.That(ex!.Message, Is.EqualTo("Category already exists"));
+                Assert.That(_db.Categories.Count(), Is.EqualTo(1));
+            });           
         }
 
-        [TearDown]
+        [Test]
+        public async Task UpdateAsync_ShouldUpdateCategory_WhenValid()
+        {
+            //Arrange
+            _currentUserMock.Setup(u => u.UserId).Returns(1);
+
+            _db.Users.Add(new Entities.User
+            {
+                UserID = 1,
+                FullName = "Test User1",
+                Email = "test@finpal.com",
+                Password = "hashedPassword",
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            });
+
+            var category = new Entities.Category
+            {
+                UserId = 1,
+                CategoryName = "Entertainment",
+                IsActive = true
+            };
+
+            _db.Categories.Add(category);
+
+            await _db.SaveChangesAsync();
+
+            var request = new CreateCategoryRequestDto
+            {
+                CategoryName = "Fun and Entertainment"
+            };
+
+            //Act
+            await _service.UpdateAsync(category.CategoryId, request);
+
+            //Assert
+            var updatedCategory = await _db.Categories
+                .FirstOrDefaultAsync(c => c.CategoryId == category.CategoryId && c.UserId == 1 && c.IsActive);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(_db.Categories.Count(), Is.EqualTo(1));
+                Assert.That(updatedCategory, Is.Not.Null);
+                Assert.That(updatedCategory!.CategoryName, Is.EqualTo("Fun and Entertainment"));
+            });            
+        }
+
+        [Test]
+        public async Task UpdateAsync_ShouldThrowException_WhenCategoryNotFound()
+        {
+            //Arrange
+            _currentUserMock.Setup(u => u.UserId).Returns(1);
+
+            _db.Users.Add(new Entities.User
+            {
+                UserID = 1,
+                FullName = "Test User1",
+                Email = "test@finpal.com",
+                Password = "hashedPassword",
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            });
+
+            await _db.SaveChangesAsync();
+
+            var request = new CreateCategoryRequestDto
+            {
+                CategoryName = "Food"
+            };
+
+            //Act & Assert
+            var ex = Assert.ThrowsAsync<KeyNotFoundException>(async () => await _service.UpdateAsync(1, request));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(ex!.Message, Is.EqualTo("Category does not exist"));
+                Assert.That(_db.Categories.Count(), Is.EqualTo(0));
+            });
+        }
+
+        [Test]
+        public async Task UpdateAsync_ShouldThrowException_WhenCategoryNameAlreadyExists()
+        {
+            //Arrange
+            _currentUserMock.Setup(u => u.UserId).Returns(1);
+
+            _db.Users.Add(new Entities.User
+            {
+                UserID = 1,
+                FullName = "Test User1",
+                Email = "test@finpal.com",
+                Password = "hashedPassword",
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            });
+
+            var category = new Entities.Category
+            {
+                UserId = 1,
+                CategoryName = "Food",
+                IsActive = true
+            };
+
+            var category2 = new Entities.Category
+            {
+                UserId = 1,
+                CategoryName = "Eating",
+                IsActive = true
+            };
+
+            _db.Categories.AddRange(category, category2);
+
+            await _db.SaveChangesAsync();
+
+            var request = new CreateCategoryRequestDto
+            {
+                CategoryName = "Food"
+            };
+
+            //Act & Assert
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => await _service.UpdateAsync(category2.CategoryId, request));
+
+            var updatedCategory = await _db.Categories
+                .FirstOrDefaultAsync(c => c.CategoryId == category2.CategoryId && c.UserId == 1 && c.IsActive);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(ex!.Message, Is.EqualTo("Duplicate category"));
+                Assert.That(_db.Categories.Count(), Is.EqualTo(2));
+                Assert.That(updatedCategory!.CategoryName, Is.EqualTo("Eating"));
+            });
+        }
+
+        [Test]
+        public async Task DeleteAsync_ShouldDeleteCategory_WhenValid()
+        {
+            //Arrange
+            _currentUserMock.Setup(u => u.UserId).Returns(1);
+
+            _db.Users.Add(new Entities.User
+            {
+                UserID = 1,
+                FullName = "Test User1",
+                Email = "test@finpal.com",
+                Password = "hashedPassword",
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            });
+
+            var category = new Entities.Category
+            {
+                UserId = 1,
+                CategoryName = "Food",
+                IsActive = true
+            };
+
+            _db.Categories.Add(category);
+
+            await _db.SaveChangesAsync();
+
+            //Act
+            await _service.DeleteAsync(category.CategoryId);
+
+            //Assert
+            var updatedCategory = await _db.Categories
+                .FirstOrDefaultAsync(c => c.CategoryId == category.CategoryId && c.UserId == 1);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(updatedCategory, Is.Not.Null);
+                Assert.That(updatedCategory!.IsActive, Is.False);
+                Assert.That(updatedCategory!.CategoryName, Is.EqualTo("Food"));
+            });
+        }
+
+    [TearDown]
         public void TearDown()
         {
             _db.Dispose();

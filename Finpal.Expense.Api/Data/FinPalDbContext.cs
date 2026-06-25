@@ -66,7 +66,7 @@ public class FinPalDbContext : DbContext
             entity.Property(b => b.CreatedAt).HasDefaultValueSql("GETDATE()").ValueGeneratedOnAdd();
             entity.HasIndex(b => new { b.UserId, b.CategoryId, b.Month, b.Year }).IsUnique().HasDatabaseName("UQ_Budgets_User_Category_Month_Year");
             entity.HasOne(b => b.Category).WithMany(c => c.Budgets).HasForeignKey(b => new { b.UserId, b.CategoryId }).HasConstraintName("FK_Budgets_UserID_CategoryID").HasPrincipalKey(c => new {c.UserId, c.CategoryId}).OnDelete(DeleteBehavior.Restrict);
-            entity.HasCheckConstraint("CK_Budgets_Month_6FE99F9F", "[Month] Between 1 and 12");
+            entity.ToTable(t => t.HasCheckConstraint("CK_Budgets_Month_6FE99F9F", "[Month] Between 1 and 12"));
 
         });
 
